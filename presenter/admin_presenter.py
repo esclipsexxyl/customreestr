@@ -37,3 +37,10 @@ class AdminPresenter:
         result = self.admin_crud.get_users()
         result = [str(item[0]) for item in result]
         return result
+
+    def delete_record(self, table, record_id):
+        self.admin_crud.delete_record(table, record_id)
+        self.view.update_current_table()
+
+    def add_user(self, login, password, role, name, second_name, last_name,date, phone):
+        self.admin_crud.add_user(login, password, role, name, second_name, last_name,date, phone)

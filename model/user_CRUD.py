@@ -11,3 +11,18 @@ class UserCRUD:
         connection.close()
         return user
 
+    def get_stat(self):
+        connection = sqlite3.connect(self.db_path)
+        cursor = connection.cursor()
+        cursor.execute("SELECT * FROM v_menu_stat")
+        row = cursor.fetchone()
+        if row:
+            users_count, roles_count, catalog_count, reestr_count = row
+            return {
+                'users': users_count,
+                'roles': roles_count,
+                'catalog': catalog_count,
+                'reestr': reestr_count
+            }
+        return None
+

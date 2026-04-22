@@ -31,5 +31,8 @@ class LoginPresenter:
             app.mainloop()
         else:
             self.view.withdraw()
+            from view.user_view import userframe
+            app = userframe(user)
+            app.mainloop()
 
 

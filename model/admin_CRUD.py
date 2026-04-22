@@ -65,7 +65,22 @@ class AdminCRUD:
                 'catalog': catalog_count,
                 'reestr': reestr_count
             }
+        connection.close()
         return None
+
+    def add_user(self, login, password, role, name, second_name, last_name,date, phone):
+        connection=sqlite3.connect(self.db_path)
+        cursor=connection.cursor()
+        cursor.execute("INSERT INTO Users (login,password,role,name,second_name,last_name,created_at,phone) VALUES (?,?,?,?,?,?,?,?)",(login,password,role,name,second_name,last_name,date,phone))
+        connection.commit()
+        connection.close()
+
+    def delete_record(self, table, record_id):
+        connection = sqlite3.connect(self.db_path)
+        cursor = connection.cursor()
+        cursor.execute(f"DELETE FROM {table} WHERE id = ?", (record_id,))
+        connection.commit()
+        connection.close()
 
     def update_cell(self,table,entry_id,column,new_value):
         connection = sqlite3.connect(self.db_path)
