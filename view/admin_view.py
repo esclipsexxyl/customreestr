@@ -158,6 +158,23 @@ class adminframe(ctk.CTkToplevel):
                 command= lambda:self.change_nav("dropdown")
                 )
         self.dropdown_btn.pack(pady=2, padx=15, fill="x")
+
+        # Кнопка выхода
+        self.exit_btn = ctk.CTkButton(
+            self.nav_frame,
+            text='🚪 Выход',
+            border_width=0,
+            fg_color="transparent",
+            text_color="#ef4444",
+            hover_color="#fee2e2",
+            anchor="w",
+            font=("Segoe UI", 14),
+            height=40,
+            corner_radius=8,
+            command=self.on_exit
+        )
+        self.exit_btn.pack(pady=(20, 2), padx=15, fill='x')
+
         # Информация о пользователе
         self.infoframe = ctk.CTkFrame(
             self.nav_frame,
@@ -1102,6 +1119,10 @@ class adminframe(ctk.CTkToplevel):
         self.tree.delete(*self.tree.get_children())
         for row in dropdown:
             self.tree.insert("", "end", values=row)
+
+    def on_exit(self):
+        self.destroy()
+
     def show_add_user_dialog(self):
         """Показывает диалоговое окно для добавления нового пользователя"""
         dialog = ctk.CTkToplevel(self)
