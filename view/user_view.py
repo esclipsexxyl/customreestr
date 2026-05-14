@@ -15,7 +15,7 @@ from presenter.user_presenter import UserPresenter
 
 
 class userframe(ctk.CTkToplevel):
-    def __init__(self, user):
+    def __init__(self, user,view):
         super().__init__()
         self.presenter = UserPresenter(self)
         self.userssum = 0
@@ -27,6 +27,7 @@ class userframe(ctk.CTkToplevel):
         self.name2 = user[5]
         self.name3 = user[6]
         self.now = datetime.now()
+        self.view = view
 
         # Настройки окна
         self.title('Реестр закупки оборудования')
@@ -37,6 +38,7 @@ class userframe(ctk.CTkToplevel):
         # Установка минимального размера и геометрии
         self.minsize(1600, 1000)
         self.geometry('1600x1000')
+        self.after(200, lambda: self.iconbitmap("images/vektorlogo.ico"))
         # self.attributes('-fullscreen', True)
 
         # Навигация
@@ -346,9 +348,13 @@ class userframe(ctk.CTkToplevel):
             corner_radius=16,
             fg_color="white",
             border_width=2,
-            border_color="#f59e0b"
+            border_color="#f59e0b",
+            cursor="hand2"
         )
         self.stat_frame1.grid(row=0, column=0, padx=20, pady=20, sticky="nsew")
+        self.stat_frame1.bind("<Button-1>", lambda e: self.change_nav("catalog"))
+        self.stat_frame1.bind("<Enter>", lambda e: self.stat_frame1.configure(fg_color="#fffbeb"))
+        self.stat_frame1.bind("<Leave>", lambda e: self.stat_frame1.configure(fg_color="white"))
 
         self.stat_frame2 = ctk.CTkFrame(
             cards_container,
@@ -357,9 +363,13 @@ class userframe(ctk.CTkToplevel):
             corner_radius=16,
             fg_color="white",
             border_width=2,
-            border_color="#ef4444"
+            border_color="#ef4444",
+            cursor="hand2"
         )
         self.stat_frame2.grid(row=0, column=1, padx=20, pady=20, sticky="nsew")
+        self.stat_frame2.bind("<Button-1>", lambda e: self.change_nav("menu"))
+        self.stat_frame2.bind("<Enter>", lambda e: self.stat_frame2.configure(fg_color="#fef2f2"))
+        self.stat_frame2.bind("<Leave>", lambda e: self.stat_frame2.configure(fg_color="white"))
 
         # Настройка весов для сетки
         cards_container.grid_columnconfigure(0, weight=1)
@@ -445,6 +455,8 @@ class userframe(ctk.CTkToplevel):
         pass
 
     def on_exit(self):
+        self.view.deiconify()
+        #self.withdraw()
         self.destroy()
 
 
@@ -481,6 +493,7 @@ class EquipmentRow:
             self.frame,
             variable=self.equipment_var,
             width=250,
+            height=35,
             values=self.record_adder.get_equipment_list(),
             state="normal",
             command=self.on_equipment_selected
@@ -667,7 +680,7 @@ class RecordAdder(ctk.CTkFrame):
 
         # Уровень 1: Форма заявки и № заявки
         ctk.CTkLabel(form_inner, text="Форма заявки*:", width=120).grid(row=0, column=0, sticky="w", pady=10, padx=(0, 10))
-        self.entries['purchase_status'] = ctk.CTkComboBox(form_inner, width=200, state="readonly")
+        self.entries['purchase_status'] = ctk.CTkComboBox(form_inner, width=200, height=35, state="readonly")
         self.entries['purchase_status'].grid(row=0, column=1, sticky="w", pady=10, padx=(0, 30))
 
         self.request_label = ctk.CTkLabel(form_inner, text="№ заявки*:", width=80)
@@ -985,13 +998,13 @@ class RecordAdder(ctk.CTkFrame):
                 equipment_text,
                 total_quantity,
                 "",
-                request_form,
-                "",
+                #request_form,
+                #"",
                 self.notes_text.get("1.0", tk.END).strip(),
                 self.file_paths["pdf"],
                 self.file_paths["excel"],
                 "",
-                "",
+                #"",
                 total_price,
                 "",
                 ""
@@ -1022,11 +1035,11 @@ class RecordAdder(ctk.CTkFrame):
             cursor.execute("""
                 INSERT INTO Procurement (
                     request_number, department_number, act_number, supplier, 
-                    equipment, quantity, delivery_date, purchase_status, 
-                    payment_status, notes, pdf_file_path, excel_file_path, 
-                    contract_number, invoice_number, equipment_price, 
-                    status, created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    equipment, quantity,purchase_status, 
+                    notes, necessity_act_path, tz_file_path, 
+                    contract_number, equipment_price, 
+                    status, created_date
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, data)
             conn.commit()
         except sqlite3.IntegrityError as e:

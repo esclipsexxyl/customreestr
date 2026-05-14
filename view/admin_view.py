@@ -12,7 +12,7 @@ from datetime import datetime
 from presenter.admin_presenter import  AdminPresenter
 
 class adminframe(ctk.CTkToplevel):
-    def __init__(self,user):
+    def __init__(self,user,view):
         super().__init__()
         self.presenter = AdminPresenter(self)
         self.userssum=0
@@ -22,6 +22,7 @@ class adminframe(ctk.CTkToplevel):
         self.login=user[1]
         self.now = datetime.now()
         self.current_table = "menu"
+        self.view = view
 
         # Настройки окна
         self.title('Реестр закупки оборудования - Панель администратора')
@@ -32,6 +33,7 @@ class adminframe(ctk.CTkToplevel):
         # Установка минимального размера и геометрии
         self.minsize(1600, 1000)
         self.geometry('1600x1000')
+        self.after(200, lambda: self.iconbitmap("images/vektorlogo.ico"))
         #self.attributes('-fullscreen', True)
         
         # Навигация
@@ -426,48 +428,64 @@ class adminframe(ctk.CTkToplevel):
         
         # Карточки статистики
         self.stat_frame1 = ctk.CTkFrame(
-            cards_container, 
+            cards_container,
             height=200,
             width=280,
             corner_radius=16,
             fg_color="white",
             border_width=2,
-            border_color="#3b82f6"
+            border_color="#3b82f6",
+            cursor="hand2"
         )
         self.stat_frame1.grid(row=0, column=0, padx=20, pady=20, sticky="nsew")
-        
+        self.stat_frame1.bind("<Button-1>", lambda e: self.change_nav("users"))
+        self.stat_frame1.bind("<Enter>", lambda e: self.stat_frame1.configure(fg_color="#f0f9ff"))
+        self.stat_frame1.bind("<Leave>", lambda e: self.stat_frame1.configure(fg_color="white"))
+
         self.stat_frame2 = ctk.CTkFrame(
-            cards_container, 
+            cards_container,
             height=200,
             width=280,
             corner_radius=16,
             fg_color="white",
             border_width=2,
-            border_color="#10b981"
+            border_color="#10b981",
+            cursor="hand2"
         )
         self.stat_frame2.grid(row=0, column=1, padx=20, pady=20, sticky="nsew")
-        
+        self.stat_frame2.bind("<Button-1>", lambda e: self.change_nav("roles"))
+        self.stat_frame2.bind("<Enter>", lambda e: self.stat_frame2.configure(fg_color="#f0fdf4"))
+        self.stat_frame2.bind("<Leave>", lambda e: self.stat_frame2.configure(fg_color="white"))
+
         self.stat_frame3 = ctk.CTkFrame(
-            cards_container, 
+            cards_container,
             height=200,
             width=280,
             corner_radius=16,
             fg_color="white",
             border_width=2,
-            border_color="#f59e0b"
+            border_color="#f59e0b",
+            cursor="hand2"
         )
         self.stat_frame3.grid(row=1, column=0, padx=20, pady=20, sticky="nsew")
-        
+        self.stat_frame3.bind("<Button-1>", lambda e: self.change_nav("catalog"))
+        self.stat_frame3.bind("<Enter>", lambda e: self.stat_frame3.configure(fg_color="#fffbeb"))
+        self.stat_frame3.bind("<Leave>", lambda e: self.stat_frame3.configure(fg_color="white"))
+
         self.stat_frame4 = ctk.CTkFrame(
-            cards_container, 
+            cards_container,
             height=200,
             width=280,
             corner_radius=16,
             fg_color="white",
             border_width=2,
-            border_color="#ef4444"
+            border_color="#ef4444",
+            cursor="hand2"
         )
         self.stat_frame4.grid(row=1, column=1, padx=20, pady=20, sticky="nsew")
+        self.stat_frame4.bind("<Button-1>", lambda e: self.change_nav("reestr"))
+        self.stat_frame4.bind("<Enter>", lambda e: self.stat_frame4.configure(fg_color="#fef2f2"))
+        self.stat_frame4.bind("<Leave>", lambda e: self.stat_frame4.configure(fg_color="white"))
         
         # Настройка весов для сетки
         cards_container.grid_columnconfigure(0, weight=1)
@@ -532,6 +550,47 @@ class adminframe(ctk.CTkToplevel):
         )
         header_label.place(relx=0.5, rely=0.5, anchor="center")
         
+        # Поисковая строка
+        search_frame = ctk.CTkFrame(self.main_frame, fg_color="white", corner_radius=12, height=50)
+        search_frame.pack(fill="x", padx=20, pady=(0, 10))
+        search_frame.pack_propagate(False)
+        
+        search_label = ctk.CTkLabel(
+            search_frame,
+            text="🔍 Поиск:",
+            font=("Segoe UI", 12),
+            text_color="#64748b",
+            fg_color="transparent"
+        )
+        search_label.place(x=15, rely=0.5, anchor="w")
+        
+        self.search_entry = ctk.CTkEntry(
+            search_frame,
+            placeholder_text="Введите текст",
+            font=("Segoe UI", 11),
+            height=32,
+            width=400,
+            corner_radius=8,
+            border_width=1,
+            border_color="#e2e8f0"
+        )
+        self.search_entry.place(x=80, rely=0.5, anchor="w")
+        self.search_entry.bind("<KeyRelease>", self.on_search_users)
+        
+        clear_search_btn = ctk.CTkButton(
+            search_frame,
+            text="✕",
+            font=("Segoe UI", 12, "bold"),
+            fg_color="#ef4444",
+            hover_color="#dc2626",
+            text_color="white",
+            height=32,
+            width=32,
+            corner_radius=8,
+            command=self.clear_search_users
+        )
+        clear_search_btn.place(x=490, rely=0.5, anchor="w")
+        
         # Контейнер для таблицы
         table_container = ctk.CTkFrame(self.main_frame, fg_color="white", corner_radius=12)
         table_container.pack(fill="both", expand=True, padx=20, pady=(0, 10))
@@ -556,12 +615,10 @@ class adminframe(ctk.CTkToplevel):
         
         self.tree = ttk.Treeview(
             table_container,
-            columns=("ID","Логин","Пароль","Роль","Имя","Фамилия","Отчество","Дата регистрации","Телефон"),
+            columns=("Логин","Пароль","Роль","Имя","Фамилия","Отчество","Дата регистрации","Телефон"),
             show="headings",
             height=15
         )
-        self.tree.heading("ID",text="ID",anchor="c")
-        self.tree.column("ID",width=60,anchor="c")
 
         self.tree.heading("Логин",text="Логин",anchor="c")
         self.tree.column("Логин",width=150,anchor="c")
@@ -588,7 +645,6 @@ class adminframe(ctk.CTkToplevel):
         self.tree.column("Телефон", width=75, anchor="c")
 
         self.column_mapping = {
-            'ID': 'id',
             'Логин': 'login',
             'Пароль': 'password',
             'Роль': 'role',
@@ -612,8 +668,50 @@ class adminframe(ctk.CTkToplevel):
         """"Отобржает список пользователей в таблице"""""
         self.tree.delete(*self.tree.get_children()) #Удалить все элементы таблицу
         print(users)
+
+        # Загружаем список ролей для подстановки названий
+        roles = self.presenter.get_roles()
+        role_dict = {role[0]: role[1] for role in roles}  # {id_роли: название_роли}
         for row in users: #Пройти по всем пользователям
-            self.tree.insert("","end",values=row) #в корневую таблицу добавить запись в конец
+            user_list = list(row)
+            role_index = 3  # Если роль на 3-й позиции (индекс 2)
+            if len(user_list) > role_index:
+                role_id = user_list[role_index]
+                user_list[role_index] = role_dict.get(role_id, f"Роль {role_id}")  # Заменяем ID на название
+
+            # Пропускаем первый столбец (обычно ID пользователя) и вставляем
+            self.tree.insert("", "end", values=user_list[1:])
+            #self.tree.insert("","end",values=row[1:]) #в корневую таблицу добавить запись в конец
+        
+        # Сохраняем оригинальные данные для поиска
+        self.all_users = users
+
+    def on_search_users(self, event=None):
+        """Фильтрует пользователей по введенному тексту"""
+        search_text = self.search_entry.get().lower().strip()
+        
+        if not search_text:
+            # Если поиск пустой, показываем всех пользователей
+            users = self.presenter.get_users()
+            self.show_users_data(users)
+            return
+        
+        # Фильтруем пользователей
+        filtered_users = []
+        for user in self.all_users:
+            # Проверяем все поля пользователя (логин, имя, фамилия, роль)
+            user_text = " ".join([str(field) for field in user]).lower()
+            if search_text in user_text:
+                filtered_users.append(user)
+        
+        # Отображаем отфильтрованных пользователей
+        self.show_users_data(filtered_users)
+
+    def clear_search_users(self):
+        """Очищает поле поиска и показывает всех пользователей"""
+        self.search_entry.delete(0, "end")
+        users = self.presenter.get_users()
+        self.show_users_data(users)
 
     def show_roles(self):
         """Shows roles table"""
@@ -633,6 +731,47 @@ class adminframe(ctk.CTkToplevel):
             fg_color="transparent"
         )
         header_label.place(relx=0.5, rely=0.5, anchor="center")
+
+        # Поисковая строка
+        search_frame = ctk.CTkFrame(self.main_frame, fg_color="white", corner_radius=12, height=50)
+        search_frame.pack(fill="x", padx=20, pady=(0, 10))
+        search_frame.pack_propagate(False)
+        
+        search_label = ctk.CTkLabel(
+            search_frame,
+            text="🔍 Поиск:",
+            font=("Segoe UI", 12),
+            text_color="#64748b",
+            fg_color="transparent"
+        )
+        search_label.place(x=15, rely=0.5, anchor="w")
+        
+        self.search_entry_roles = ctk.CTkEntry(
+            search_frame,
+            placeholder_text="Введите текст",
+            font=("Segoe UI", 11),
+            height=32,
+            width=400,
+            corner_radius=8,
+            border_width=1,
+            border_color="#e2e8f0"
+        )
+        self.search_entry_roles.place(x=80, rely=0.5, anchor="w")
+        self.search_entry_roles.bind("<KeyRelease>", self.on_search_roles)
+        
+        clear_search_btn = ctk.CTkButton(
+            search_frame,
+            text="✕",
+            font=("Segoe UI", 12, "bold"),
+            fg_color="#ef4444",
+            hover_color="#dc2626",
+            text_color="white",
+            height=32,
+            width=32,
+            corner_radius=8,
+            command=self.clear_search_roles
+        )
+        clear_search_btn.place(x=490, rely=0.5, anchor="w")
 
         # Table container
         table_container = ctk.CTkFrame(self.main_frame, fg_color="white", corner_radius=12)
@@ -659,18 +798,15 @@ class adminframe(ctk.CTkToplevel):
         # Treeview with Roles table columns (ID and Name only)
         self.tree = ttk.Treeview(
             table_container,
-            columns=("ID", "Name"),
+            columns=("Name",),
             show="headings",
             height=15
         )
 
-        self.tree.heading("ID", text="ID", anchor="c")
-        self.tree.column("ID", width=80, anchor="c")
         self.tree.heading("Name", text="Название роли", anchor="c")
         self.tree.column("Name", width=250, anchor="c")
 
         self.column_mapping = {
-            'ID': 'id',
             'Name': 'name'
         }
 
@@ -685,7 +821,35 @@ class adminframe(ctk.CTkToplevel):
         """Displays roles data in table"""
         self.tree.delete(*self.tree.get_children())
         for row in roles:
-            self.tree.insert("", "end", values=row)
+            self.tree.insert("", "end", values=row[1:])
+        self.all_roles = roles
+
+    def on_search_roles(self, event=None):
+        """Фильтрует пользователей по введенному тексту"""
+        search_text = self.search_entry_roles.get().lower().strip()
+
+        if not search_text:
+            # Если поиск пустой, показываем всех пользователей
+            roles = self.presenter.get_roles()
+            self.show_roles_data(roles)
+            return
+
+        # Фильтруем пользователей
+        filtered_roles = []
+        for role in self.all_roles:
+            # Проверяем все поля пользователя (логин, имя, фамилия, роль)
+            user_text = " ".join([str(field) for field in role]).lower()
+            if search_text in user_text:
+                filtered_roles.append(role)
+
+        # Отображаем отфильтрованных пользователей
+        self.show_roles_data(filtered_roles)
+
+    def clear_search_roles(self):
+        """Очищает поле поиска и показывает всех пользователей"""
+        self.search_entry_roles.delete(0, "end")
+        roles = self.presenter.get_roles()
+        self.show_roles_data(roles)
 
     def show_reestr(self):
         """Shows procurement (реестр) table"""
@@ -705,6 +869,47 @@ class adminframe(ctk.CTkToplevel):
             fg_color="transparent"
         )
         header_label.place(relx=0.5, rely=0.5, anchor="center")
+
+        # Поисковая строка
+        search_frame = ctk.CTkFrame(self.main_frame, fg_color="white", corner_radius=12, height=50)
+        search_frame.pack(fill="x", padx=20, pady=(0, 10))
+        search_frame.pack_propagate(False)
+
+        search_label = ctk.CTkLabel(
+            search_frame,
+            text="🔍 Поиск:",
+            font=("Segoe UI", 12),
+            text_color="#64748b",
+            fg_color="transparent"
+        )
+        search_label.place(x=15, rely=0.5, anchor="w")
+
+        self.search_entry_reestr = ctk.CTkEntry(
+            search_frame,
+            placeholder_text="Введите текст",
+            font=("Segoe UI", 11),
+            height=32,
+            width=400,
+            corner_radius=8,
+            border_width=1,
+            border_color="#e2e8f0"
+        )
+        self.search_entry_reestr.place(x=80, rely=0.5, anchor="w")
+        self.search_entry_reestr.bind("<KeyRelease>", self.on_search_reestr)
+
+        clear_search_btn = ctk.CTkButton(
+            search_frame,
+            text="✕",
+            font=("Segoe UI", 12, "bold"),
+            fg_color="#ef4444",
+            hover_color="#dc2626",
+            text_color="white",
+            height=32,
+            width=32,
+            corner_radius=8,
+            command=self.clear_search_reestr
+        )
+        clear_search_btn.place(x=490, rely=0.5, anchor="w")
 
         # Table container - теперь он будет занимать всё оставшееся место
         table_container = ctk.CTkFrame(self.main_frame, fg_color="white", corner_radius=12)
@@ -751,7 +956,7 @@ class adminframe(ctk.CTkToplevel):
         # Treeview with all Procurement columns
         self.tree = ttk.Treeview(
             table_frame,
-            columns=("ID", "Номер заявки", "Номер отдела", "Номер акта", "Дата акта",
+            columns=("Номер заявки", "Номер отдела", "Номер акта", "Дата акта",
                      "Оборудование", "Количество", "Финансовое решение", "Статус закупки",
                      "Номер контракта", "Примечания", "Акт необходимости", "ТЗ файл",
                      "Отправитель ТЗ", "Дата отправки ТЗ", "Цена оборудования",
@@ -761,8 +966,7 @@ class adminframe(ctk.CTkToplevel):
         )
 
         # Настройка колонок - УВЕЛИЧЕННАЯ ШИРИНА
-        self.tree.heading("ID", text="ID", anchor="c")
-        self.tree.column("ID", width=80, anchor="c", minwidth=80)
+
 
         self.tree.heading("Номер заявки", text="Номер заявки", anchor="c")
         self.tree.column("Номер заявки", width=150, anchor="c", minwidth=120)
@@ -819,7 +1023,6 @@ class adminframe(ctk.CTkToplevel):
         self.tree.column("Дата создания", width=150, anchor="c", minwidth=120)
 
         self.column_mapping = {
-            'ID': 'id',
             'Номер заявки': 'request_number',
             'Номер отдела': 'department_number',
             'Номер акта': 'act_number',
@@ -876,9 +1079,38 @@ class adminframe(ctk.CTkToplevel):
         for row in reestr:
             # Если row - это кортеж или список, берем первый элемент (ID)
             if isinstance(row, (tuple, list)):
-                self.tree.insert("", "end", values=(row[0],))
+                self.tree.insert("", "end", values=(row[1:],))
             else:
                 self.tree.insert("", "end", values=(row,))
+        self.all_reestr = reestr
+
+    def on_search_reestr(self, event=None):
+        """Фильтрует пользователей по введенному тексту"""
+        search_text = self.search_entry_reestr.get().lower().strip()
+
+        if not search_text:
+            # Если поиск пустой, показываем всех пользователей
+            reestr = self.presenter.get_reestr()
+            self.show_reestr_data(reestr)
+            return
+
+        # Фильтруем пользователей
+        filtered_reestr = []
+        for reestr in self.all_reestr:
+            # Проверяем все поля пользователя (логин, имя, фамилия, роль)
+            user_text = " ".join([str(field) for field in reestr]).lower()
+            if search_text in user_text:
+                filtered_reestr.append(reestr)
+
+        # Отображаем отфильтрованных пользователей
+        self.show_reestr_data(filtered_reestr)
+
+    def clear_search_reestr(self):
+        """Очищает поле поиска и показывает всех пользователей"""
+        self.search_entry_reestr.delete(0, "end")
+        reestr = self.presenter.get_reestr()
+        self.show_reestr_data(reestr)
+
     def show_catalog(self):
         """Shows price catalog table"""
         self.current_table = 'Price_Catalog'
@@ -897,6 +1129,46 @@ class adminframe(ctk.CTkToplevel):
             fg_color="transparent"
         )
         header_label.place(relx=0.5, rely=0.5, anchor="center")
+        # Поисковая строка
+        search_frame = ctk.CTkFrame(self.main_frame, fg_color="white", corner_radius=12, height=50)
+        search_frame.pack(fill="x", padx=20, pady=(0, 10))
+        search_frame.pack_propagate(False)
+
+        search_label = ctk.CTkLabel(
+            search_frame,
+            text="🔍 Поиск:",
+            font=("Segoe UI", 12),
+            text_color="#64748b",
+            fg_color="transparent"
+        )
+        search_label.place(x=15, rely=0.5, anchor="w")
+
+        self.search_entry_catalog = ctk.CTkEntry(
+            search_frame,
+            placeholder_text="Введите текст",
+            font=("Segoe UI", 11),
+            height=32,
+            width=400,
+            corner_radius=8,
+            border_width=1,
+            border_color="#e2e8f0"
+        )
+        self.search_entry_catalog.place(x=80, rely=0.5, anchor="w")
+        self.search_entry_catalog.bind("<KeyRelease>", self.on_search_catalog)
+
+        clear_search_btn = ctk.CTkButton(
+            search_frame,
+            text="✕",
+            font=("Segoe UI", 12, "bold"),
+            fg_color="#ef4444",
+            hover_color="#dc2626",
+            text_color="white",
+            height=32,
+            width=32,
+            corner_radius=8,
+            command=self.clear_search_catalog
+        )
+        clear_search_btn.place(x=490, rely=0.5, anchor="w")
 
         # Table container
         table_container = ctk.CTkFrame(self.main_frame, fg_color="white", corner_radius=12)
@@ -923,13 +1195,11 @@ class adminframe(ctk.CTkToplevel):
         # Treeview with all Price_catalog columns
         self.tree = ttk.Treeview(
             table_container,
-            columns=("ID", "Name", "Unit Price", "Description", "Category", "Last Updated"),
+            columns=("Name", "Unit Price", "Description", "Category", "Last Updated"),
             show="headings",
             height=15
         )
 
-        self.tree.heading("ID", text="ID", anchor="c")
-        self.tree.column("ID", width=60, anchor="c")
 
         self.tree.heading("Name", text="Наименование", anchor="c")
         self.tree.column("Name", width=200, anchor="c")
@@ -947,7 +1217,6 @@ class adminframe(ctk.CTkToplevel):
         self.tree.column("Last Updated", width=150, anchor="c")
 
         self.column_mapping = {
-            'ID': 'id',
             'Name': 'name',
             'Unit Price': 'unit_price',
             'Description': 'description',
@@ -966,7 +1235,36 @@ class adminframe(ctk.CTkToplevel):
         """Displays price catalog data in table"""
         self.tree.delete(*self.tree.get_children())
         for row in catalog:
-            self.tree.insert("", "end", values=row)
+            self.tree.insert("", "end", values=row[1:])
+        self.all_catalog = catalog
+
+    def on_search_catalog(self, event=None):
+        """Фильтрует пользователей по введенному тексту"""
+        search_text = self.search_entry_catalog.get().lower().strip()
+
+        if not search_text:
+            # Если поиск пустой, показываем всех пользователей
+            catalog = self.presenter.get_catalog()
+            self.show_catalog_data(catalog)
+            return
+
+        # Фильтруем пользователей
+        filtered_catalog = []
+        for catalog in self.all_catalog:
+            # Проверяем все поля пользователя (логин, имя, фамилия, роль)
+            user_text = " ".join([str(field) for field in catalog]).lower()
+            if search_text in user_text:
+                filtered_catalog.append(catalog)
+
+        # Отображаем отфильтрованных пользователей
+        self.show_catalog_data(filtered_catalog)
+
+    def clear_search_catalog(self):
+        """Очищает поле поиска и показывает всех пользователей"""
+        self.search_entry_catalog.delete(0, "end")
+        catalog = self.presenter.get_catalog()
+        self.show_catalog_data(catalog)
+
     def show_logs(self):
         """Shows logs table"""
         self.current_table = 'Logs'
@@ -985,6 +1283,46 @@ class adminframe(ctk.CTkToplevel):
             fg_color="transparent"
         )
         header_label.place(relx=0.5, rely=0.5, anchor="center")
+        # Поисковая строка
+        search_frame = ctk.CTkFrame(self.main_frame, fg_color="white", corner_radius=12, height=50)
+        search_frame.pack(fill="x", padx=20, pady=(0, 10))
+        search_frame.pack_propagate(False)
+
+        search_label = ctk.CTkLabel(
+            search_frame,
+            text="🔍 Поиск:",
+            font=("Segoe UI", 12),
+            text_color="#64748b",
+            fg_color="transparent"
+        )
+        search_label.place(x=15, rely=0.5, anchor="w")
+
+        self.search_entry_logs = ctk.CTkEntry(
+            search_frame,
+            placeholder_text="Введите текст",
+            font=("Segoe UI", 11),
+            height=32,
+            width=400,
+            corner_radius=8,
+            border_width=1,
+            border_color="#e2e8f0"
+        )
+        self.search_entry_logs.place(x=80, rely=0.5, anchor="w")
+        self.search_entry_logs.bind("<KeyRelease>", self.on_search_logs)
+
+        clear_search_btn = ctk.CTkButton(
+            search_frame,
+            text="✕",
+            font=("Segoe UI", 12, "bold"),
+            fg_color="#ef4444",
+            hover_color="#dc2626",
+            text_color="white",
+            height=32,
+            width=32,
+            corner_radius=8,
+            command=self.clear_search_logs
+        )
+        clear_search_btn.place(x=490, rely=0.5, anchor="w")
 
         # Table container
         table_container = ctk.CTkFrame(self.main_frame, fg_color="white", corner_radius=12)
@@ -1010,13 +1348,12 @@ class adminframe(ctk.CTkToplevel):
 
         self.tree = ttk.Treeview(
             table_container,
-            columns=("ID", "User", "Action", "Date"),
+            columns=("User", "Action", "Date"),
             show="headings",
             height=15
         )
 
-        self.tree.heading("ID", text="ID", anchor="c")
-        self.tree.column("ID", width=60, anchor="c")
+
         self.tree.heading("User", text="Пользователь", anchor="c")
         self.tree.column("User", width=150, anchor="c")
         self.tree.heading("Action", text="Действие", anchor="c")
@@ -1025,7 +1362,6 @@ class adminframe(ctk.CTkToplevel):
         self.tree.column("Date", width=150, anchor="c")
 
         self.column_mapping = {
-            'ID': 'id',
             'User': 'user',
             'Action': 'action',
             'Date': 'date'
@@ -1042,8 +1378,37 @@ class adminframe(ctk.CTkToplevel):
         """Displays logs data in table"""
         self.tree.delete(*self.tree.get_children())
         for row in logs:
-            self.tree.insert("", "end", values=row)
-    def show_dropdown(self):
+            self.tree.insert("", "end", values=row[1:])
+        self.all_logs = logs
+
+    def on_search_logs(self, event=None):
+        """Фильтрует пользователей по введенному тексту"""
+        search_text = self.search_entry_logs.get().lower().strip()
+
+        if not search_text:
+            # Если поиск пустой, показываем всех пользователей
+            logs = self.presenter.get_logs()
+            self.show_logs_data(logs)
+            return
+
+        # Фильтруем пользователей
+        filtered_logs = []
+        for logs in self.all_logs:
+            # Проверяем все поля пользователя (логин, имя, фамилия, роль)
+            user_text = " ".join([str(field) for field in logs]).lower()
+            if search_text in user_text:
+                filtered_logs.append(logs)
+
+        # Отображаем отфильтрованных пользователей
+        self.show_logs_data(filtered_logs)
+
+    def clear_search_logs(self):
+        """Очищает поле поиска и показывает всех пользователей"""
+        self.search_entry_logs.delete(0, "end")
+        logs = self.presenter.get_logs()
+        self.show_logs_data(logs)
+
+    '''def show_dropdown(self):
         """Shows dropdown values table"""
         self.current_table = 'Dropdown_values'
         self.clear_main_frame()
@@ -1118,9 +1483,14 @@ class adminframe(ctk.CTkToplevel):
         """Displays dropdown data in table"""
         self.tree.delete(*self.tree.get_children())
         for row in dropdown:
-            self.tree.insert("", "end", values=row)
+            self.tree.insert("", "end", values=row) '''
 
     def on_exit(self):
+        #from view.login_view import loginframe
+        #app = loginframe()
+        #app.mainloop()
+        self.view.deiconify()
+        #self.withdraw()
         self.destroy()
 
     def show_add_user_dialog(self):

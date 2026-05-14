@@ -14,7 +14,8 @@ class loginframe(ctk.CTk):
         self.configure(fg_color="#f8fafc")
         ctk.set_default_color_theme("blue")
         ctk.set_appearance_mode("light")
-        
+
+        self.iconbitmap("images/vektorlogo.ico")
         # Установка минимального размера и геометрии
         self.minsize(500, 600)
         self.geometry('500x600')

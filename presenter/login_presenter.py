@@ -27,12 +27,12 @@ class LoginPresenter:
         if role == 1:
             self.view.withdraw()
             from view.admin_view import adminframe
-            app = adminframe(user)
+            app = adminframe(user,self.view)
             app.mainloop()
         else:
             self.view.withdraw()
             from view.user_view import userframe
-            app = userframe(user)
+            app = userframe(user,self.view)
             app.mainloop()
 
 
